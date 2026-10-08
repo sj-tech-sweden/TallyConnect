@@ -2,7 +2,10 @@
   "name": "tallyconnect",
   "version": "1.0.0",
   "description": "ATEM tally light for ProPresenter Stage Display / web overlays",
-  "author": "SJ Tech",
+  "author": {
+    "name": "SJ Tech",
+    "email": "sj-tech-sweden@users.noreply.github.com"
+  },
   "main": "dist/main/main.js",
   "repository": {
     "type": "git",
@@ -11,7 +14,7 @@
   "scripts": {
     "dev": "tsc && electron .",
     "compile": "tsc",
-    "build": "tsc && electron-builder",
+    "build": "tsc && electron-builder --publish=never",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
