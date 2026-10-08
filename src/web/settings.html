@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TallyConnect Settings</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1e1e1e; color: #eee; font-size: 14px;
+    }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    .sub { color: #999; margin: 0 0 18px; }
+    label { display: block; margin: 12px 0 4px; font-weight: 600; }
+    label.checkbox { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-top: 12px; }
+    label.checkbox input { width: auto; }
+    input, select {
+      width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #444;
+      background: #2a2a2a; color: #eee; font-size: 14px;
+    }
+    .row { display: flex; gap: 12px; }
+    .row > div { flex: 1; }
+    button {
+      margin-top: 20px; width: 100%; padding: 10px; border: 0; border-radius: 6px;
+      background: #2563eb; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    .btn-row { display: flex; gap: 12px; margin-top: 20px; }
+    .btn-row button { margin-top: 0; flex: 1; }
+    button.danger { background: #dc2626; }
+    button.danger:hover { background: #b91c1c; }
+    .status {
+      margin-top: 16px; padding: 10px; border-radius: 6px; text-align: center; font-weight: 700;
+    }
+    .status.connected { background: #14532d; color: #86efac; }
+    .status.connecting { background: #713f12; color: #fde68a; }
+    .status.disconnected { background: #7f1d1d; color: #fca5a5; }
+    .tally {
+      margin-top: 12px; padding: 14px; border-radius: 6px; text-align: center;
+      font-weight: 800; font-size: 16px; letter-spacing: 1px; background: #333;
+    }
+    .tally.program { background: #dc2626; color: #fff; }
+    .tally.preview { background: #16a34a; color: #fff; }
+    .tally.offline { background: #444; color: #bbb; }
+    .tally.off { background: #333; color: #888; }
+  </style>
+</head>
+<body>
+  <h1>TallyConnect</h1>
+  <p class="sub">ATEM tally for ProPresenter Stage Display</p>
+
+  <form id="form">
+    <label for="atemIp">ATEM IP address</label>
+    <input id="atemIp" type="text" placeholder="192.168.10.240" />
+
+    <div class="row">
+      <div>
+        <label for="inputNumber">Input number</label>
+        <input id="inputNumber" type="number" min="1" />
+      </div>
+      <div>
+        <label for="webServerPort">Web port</label>
+        <input id="webServerPort" type="number" min="1" max="65535" />
+      </div>
+    </div>
+
+    <label for="overlayStyle">Overlay style</label>
+    <select id="overlayStyle">
+      <option value="border">Border</option>
+      <option value="box">Box</option>
+      <option value="both">Both</option>
+    </select>
+
+    <label for="borderWidth">Border width (px)</label>
+    <input id="borderWidth" type="number" min="0" />
+
+    <label for="displayId">Overlay display (0 = primary, empty = off)</label>
+    <input id="displayId" type="number" min="0" placeholder="empty = off" />
+
+    <label for="overlayShowLabel" class="checkbox">
+      <input id="overlayShowLabel" type="checkbox" />
+      Show LIVE / PREVIEW text on overlay
+    </label>
+
+    <div class="btn-row">
+      <button type="submit">Save</button>
+      <button type="button" id="quitBtn" class="danger">Quit</button>
+    </div>
+  </form>
+
+  <div id="status" class="status disconnected">disconnected</div>
+  <div id="tally" class="tally off">OFF-AIR</div>
+
+  <script>
+    const api = window.electronAPI;
+    const $ = (id) => document.getElementById(id);
+
+    function fill(s) {
+      $('atemIp').value = s.atemIp || '';
+      $('inputNumber').value = s.inputNumber ?? '';
+      $('webServerPort').value = s.webServerPort ?? '';
+      $('overlayStyle').value = s.overlayStyle || 'border';
+      $('borderWidth').value = s.borderWidth ?? '';
+      $('displayId').value = s.displayId ?? '';
+      $('overlayShowLabel').checked = s.overlayShowLabel !== false;
+    }
+
+    function setStatus(status) {
+      const el = $('status');
+      el.className = 'status ' + status;
+      el.textContent = status;
+    }
+
+    function setTally(state) {
+      const el = $('tally');
+      el.className = 'tally ' + state;
+      el.textContent = state === 'program' ? 'LIVE'
+        : state === 'preview' ? 'PREVIEW'
+        : state === 'offline' ? 'OFFLINE'
+        : 'OFF-AIR';
+    }
+
+    api.getSettings().then((s) => {
+      fill(s);
+      setStatus(s.status || 'disconnected');
+    });
+
+    api.onStatusChange(setStatus);
+    api.onTallyChange(setTally);
+
+    $('quitBtn').addEventListener('click', () => api.quit());
+
+    $('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const displayId = $('displayId').value.trim();
+      api.saveSettings({
+        atemIp: $('atemIp').value.trim(),
+        inputNumber: parseInt($('inputNumber').value, 10),
+        webServerPort: parseInt($('webServerPort').value, 10),
+        overlayStyle: $('overlayStyle').value,
+        borderWidth: parseInt($('borderWidth').value, 10),
+        overlayShowLabel: $('overlayShowLabel').checked,
+        displayId: displayId === '' ? null : parseInt(displayId, 10),
+      });
+    });
+  </script>
+</body>
+</html>

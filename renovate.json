@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":preserveSemverRanges"
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": ["electron", "electron-builder"],
+      "groupName": "electron framework",
+      "automerge": false
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "excludePackageNames": ["electron", "electron-builder"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "matchPackageNames": ["atem-connection", "ws"],
+      "groupName": "network & hardware protocols",
+      "labels": ["hardware", "dependencies"]
+    }
+  ]
+}

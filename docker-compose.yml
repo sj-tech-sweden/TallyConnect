@@ -1,0 +1,15 @@
+# Local ATEM simulator for developing TallyConnect without hardware.
+#
+#   docker compose up
+#
+# Then point TallyConnect's ATEM IP at 127.0.0.1 (or: ATEM_IP=127.0.0.1 npm run dev).
+#
+# This runs our own Node ATEM simulator (scripts/mock-atem-node.js), which speaks
+# the exact protocol atem-connection expects. (pyAtemSim uses an older header
+# format that atem-connection does not understand, so it will not connect.)
+services:
+  atem-sim:
+    build: ./mock
+    ports:
+      - "9910:9910/udp"
+      - "9932:9932"

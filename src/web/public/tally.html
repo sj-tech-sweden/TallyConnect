@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TallyConnect Overlay</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* Full-screen tally surface. The border is drawn with an inset box-shadow
+       and/or a fill, both controlled by the style/width query parameters. The
+       background stays transparent so the desktop shows through except where
+       the tally is drawn. */
+    #tally {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      transition: box-shadow 0.15s ease-in-out, background-color 0.15s ease-in-out;
+    }
+
+    /* Centered label (ON-AIR / PREVIEW / OFF-AIR) — shown via ?showLabel=true */
+    #label {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 8vw;
+      font-weight: 900;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+      pointer-events: none;
+    }
+
+    body.show-label #label {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="tally"></div>
+  <div id="label">OFF-AIR</div>
+
+  <script>
+    const tally = document.getElementById('tally');
+    const label = document.getElementById('label');
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const showLabel = urlParams.get('showLabel') === 'true';
+    const style = urlParams.get('style') || 'border';
+    const width = parseInt(urlParams.get('width') || '14', 10);
+    if (showLabel) document.body.classList.add('show-label');
+
+    function connect() {
+      const host = window.location.host;
+      const ws = new WebSocket(`ws://${host}`);
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'tally-change') updateUI(data.state);
+      };
+
+      ws.onclose = () => {
+        updateUI('offline');
+        setTimeout(connect, 2000); // reconnect loop
+      };
+
+      ws.onerror = () => ws.close();
+    }
+
+    function updateUI(state) {
+      if (showLabel) document.body.classList.add('show-label');
+
+      label.innerText =
+        state === 'program' ? 'LIVE' :
+        state === 'preview' ? 'PREVIEW' :
+        state === 'offline' ? 'OFFLINE' : 'OFF-AIR';
+
+      // Live states use a solid color; off-air / offline use a dim frame/fill
+      // so the overlay is still visible (and you can confirm its placement).
+      // The fill is translucent so the screen stays usable while live.
+      let border = '#444444';
+      let fill = 'rgba(70, 70, 70, 0.35)';
+      if (state === 'program') { border = '#ff0000'; fill = 'rgba(255, 0, 0, 0.6)'; }
+      else if (state === 'preview') { border = '#00ff00'; fill = 'rgba(0, 255, 0, 0.6)'; }
+
+      // Reset, then apply the chosen style.
+      tally.style.boxShadow = 'none';
+      tally.style.backgroundColor = 'transparent';
+      if (style === 'border' || style === 'both') {
+        tally.style.boxShadow = `inset 0 0 0 ${width}px ${border}`;
+      }
+      if (style === 'box' || style === 'both') {
+        tally.style.backgroundColor = fill;
+      }
+    }
+
+    connect();
+  </script>
+</body>
+</html>
