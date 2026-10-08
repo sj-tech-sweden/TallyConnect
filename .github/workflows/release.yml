@@ -62,13 +62,19 @@ jobs:
           echo "tag=v$NEW" >> "$GITHUB_OUTPUT"
 
       - name: Bump package.json version
-        run: npm version "${{ steps.semver.outputs.version }}" --no-git-tag-version
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          if [ "$CURRENT" != "${{ steps.semver.outputs.version }}" ]; then
+            npm version "${{ steps.semver.outputs.version }}" --no-git-tag-version
+          fi
 
       - name: Commit, tag & push
         run: |
           git add package.json package-lock.json
-          git commit -m "chore(release): ${{ steps.semver.outputs.tag }}"
-          git push origin HEAD:main
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): ${{ steps.semver.outputs.tag }}"
+            git push origin HEAD:main
+          fi
           git tag -a "${{ steps.semver.outputs.tag }}" -m "Release ${{ steps.semver.outputs.tag }}"
           git push origin "${{ steps.semver.outputs.tag }}"
 
