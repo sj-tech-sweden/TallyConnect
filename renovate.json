@@ -4,6 +4,7 @@
     "config:recommended",
     ":preserveSemverRanges"
   ],
+  "semanticCommits": "enabled",
   "packageRules": [
     {
       "matchPackageNames": ["electron", "electron-builder"],

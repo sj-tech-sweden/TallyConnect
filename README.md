@@ -128,12 +128,14 @@ input changes program/preview state.
 
 ## Releasing
 
-Releases are automated with semantic versioning:
+Releases are automated from commit messages using
+[release-please](https://github.com/googleapis/release-please-action):
 
-1. Go to **Actions → Release** and run the workflow.
-2. Pick a bump — `patch`, `minor`, or `major`.
-3. The workflow bumps `package.json`, commits it, tags the repo (`vX.Y.Z`), and
-   creates a GitHub release (release notes are generated from commits).
+1. Commit using [Conventional Commits](https://www.conventionalcommits.org/):
+   `fix:` → patch, `feat:` → minor, `feat!:`/`fix!:` → major.
+2. release-please opens/updates a **release PR** on `main` with the generated
+   changelog and `package.json` bump.
+3. Merge that PR to tag the repo (`vX.Y.Z`) and create the GitHub release.
 4. A matrix build then produces distributables for **macOS** (`.dmg` + `.zip`,
    arm64), **Windows** (`.exe`/NSIS installer), and **Linux** (`.AppImage` +
    `.deb`), and uploads them to that release.
