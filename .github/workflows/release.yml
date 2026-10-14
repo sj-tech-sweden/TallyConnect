@@ -1,103 +1,50 @@
 name: Release
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
-      bump:
-        description: "Semantic version bump"
-        required: true
-        default: patch
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
+      tag:
+        description: "Existing release tag to build/upload assets for (e.g. v1.2.3). Leave empty for a normal release-please run."
+        required: false
+        type: string
 
 permissions:
   contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
-  prepare:
-    name: Bump version, tag & create release
-    if: github.event_name == 'workflow_dispatch'
+  release-please:
+    name: Open or finalize release PR
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.semver.outputs.version }}
-      tag: ${{ steps.semver.outputs.tag }}
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: googleapis/release-please-action@v4
+        id: release
         with:
-          fetch-depth: 0
+          release-type: node
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "24"
-
-      - name: Configure git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Compute next version
-        id: semver
-        run: |
-          LATEST=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n1)
-          if [ -z "$LATEST" ]; then
-            NEW="1.0.0"
-          else
-            BASE="${LATEST#v}"
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE"
-            case "${{ github.event.inputs.bump }}" in
-              major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-              minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-              patch) PATCH=$((PATCH + 1)) ;;
-            esac
-            NEW="$MAJOR.$MINOR.$PATCH"
-          fi
-          echo "version=$NEW" >> "$GITHUB_OUTPUT"
-          echo "tag=v$NEW" >> "$GITHUB_OUTPUT"
-
-      - name: Bump package.json version
-        run: |
-          CURRENT=$(node -p "require('./package.json').version")
-          if [ "$CURRENT" != "${{ steps.semver.outputs.version }}" ]; then
-            npm version "${{ steps.semver.outputs.version }}" --no-git-tag-version
-          fi
-
-      - name: Commit, tag & push
-        run: |
-          git add package.json package-lock.json
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(release): ${{ steps.semver.outputs.tag }}"
-            git push origin HEAD:main
-          fi
-          git tag -a "${{ steps.semver.outputs.tag }}" -m "Release ${{ steps.semver.outputs.tag }}"
-          git push origin "${{ steps.semver.outputs.tag }}"
-
-      - name: Create GitHub release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "${{ steps.semver.outputs.tag }}" \
-            --title "${{ steps.semver.outputs.tag }}" \
-            --generate-notes
 
   build:
     name: Build (${{ matrix.os }})
-    needs: [prepare]
+    needs: [release-please]
+    if: >-
+      needs.release-please.outputs.release_created == 'true' ||
+      inputs.tag != ''
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
-    concurrency:
-      group: release-${{ needs.prepare.outputs.tag }}-${{ matrix.os }}
-      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.prepare.outputs.tag }}
+          ref: ${{ inputs.tag != '' && inputs.tag || needs.release-please.outputs.tag_name }}
 
       - uses: actions/setup-node@v7
         with:
@@ -115,4 +62,4 @@ jobs:
       - name: Upload release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ needs.prepare.outputs.tag }}" release/*.* --clobber
+        run: gh release upload "${{ inputs.tag != '' && inputs.tag || needs.release-please.outputs.tag_name }}" release/*.* --clobber

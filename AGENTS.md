@@ -19,10 +19,21 @@ TypeScript + Electron desktop app. Bundled with `electron-builder`. Tests use
 
 ## Releasing
 
-- Driven by `.github/workflows/release.yml`. Triggered from Actions (workflow_dispatch)
-  with a `patch` / `minor` / `major` bump. It bumps `package.json`, tags `vX.Y.Z`,
-  creates a GitHub release, then a matrix builds macOS/Windows/Linux artifacts and
-  uploads them. Distributables are **unsigned** (no signing certs).
+- Driven by `.github/workflows/release.yml` using
+  [`googleapis/release-please-action`](https://github.com/googleapis/release-please-action).
+  Releases are **automatic** from commits: release-please parses
+  [Conventional Commits](https://www.conventionalcommits.org/) and keeps a
+  release PR up to date on `main`. Merging that PR bumps `package.json`, tags
+  `vX.Y.Z`, and creates the GitHub release.
+  - `fix:` → patch, `feat:` → minor, `feat!:`/`fix!:`/etc. → major.
+- `renovate.json` enables `semanticCommits`, so dependency updates are committed
+  as `fix(deps)`/`feat(deps)`/`feat(deps)!` and are picked up by release-please:
+  patch/minor/major bumps drive the right semver and appear in the release notes.
+- When a release is created, the `build` matrix builds macOS/Windows/Linux
+  artifacts (`npm run build`) and uploads them to the release via `gh`.
+  Distributables are **unsigned** (no signing certs).
+- `workflow_dispatch` with a `tag` input rebuilds and re-uploads assets for an
+  existing tag (no version bump). Leave it empty for the normal release-please run.
 - Local `npm run build` is for verifying packaging on the dev machine only.
 
 ## Local ATEM simulator (no hardware needed)
