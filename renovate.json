@@ -24,9 +24,12 @@
     },
     {
       "matchDepTypes": ["devDependencies"],
-      "excludePackageNames": ["electron", "electron-builder"],
       "matchUpdateTypes": ["minor", "patch"],
-      "automerge": true
+      "automerge": true,
+      "matchPackageNames": [
+        "!electron",
+        "!electron-builder"
+      ]
     },
     {
       "matchPackageNames": ["atem-connection", "ws"],
