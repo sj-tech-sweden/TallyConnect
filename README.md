@@ -131,8 +131,11 @@ input changes program/preview state.
 Releases are automated from commit messages using
 [release-please](https://github.com/googleapis/release-please-action):
 
-1. Commit using [Conventional Commits](https://www.conventionalcommits.org/):
-   `fix:` → patch, `feat:` → minor, `feat!:`/`fix!:` → major.
+ 1. Commit using [Conventional Commits](https://www.conventionalcommits.org/):
+    `fix:` → patch, `feat:` → minor, `feat!:`/`fix!:` → major. Dependency
+    updates from Renovate are flattened to the `deps:` type and grouped under a
+    **Dependencies** changelog section (major bumps use `deps!:` → major release,
+    others → patch).
 2. release-please opens/updates a **release PR** on `main` with the generated
    changelog and `package.json` bump.
 3. Merge that PR to tag the repo (`vX.Y.Z`) and create the GitHub release.

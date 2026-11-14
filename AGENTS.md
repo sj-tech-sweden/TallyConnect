@@ -26,9 +26,12 @@ TypeScript + Electron desktop app. Bundled with `electron-builder`. Tests use
   release PR up to date on `main`. Merging that PR bumps `package.json`, tags
   `vX.Y.Z`, and creates the GitHub release.
   - `fix:` → patch, `feat:` → minor, `feat!:`/`fix!:`/etc. → major.
-- `renovate.json` enables `semanticCommits`, so dependency updates are committed
-  as `fix(deps)`/`feat(deps)`/`feat(deps)!` and are picked up by release-please:
-  patch/minor/major bumps drive the right semver and appear in the release notes.
+- `renovate.json` flattens dependency updates to the `deps:` conventional-commit
+  type (`semanticCommitType: "deps"`), so release-please groups them under a
+  dedicated **Dependencies** changelog section. Major/breaking dependency bumps
+  keep the `!` marker (`deps!:`) and drive a major release; all other dependency
+  updates create a patch release. Configured via `release-please-config.json`
+  (explicit `changelog-sections`) and `.release-please-manifest.json`.
 - When a release is created, the `build` matrix builds macOS/Windows/Linux
   artifacts (`npm run build`) and uploads them to the release via `gh`.
   Distributables are **unsigned** (no signing certs).

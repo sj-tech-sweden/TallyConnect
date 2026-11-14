@@ -2,10 +2,16 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
-    ":preserveSemverRanges"
+    ":preserveSemverRanges",
+    ":semanticCommitScopeDisabled"
   ],
   "semanticCommits": "enabled",
   "packageRules": [
+    {
+      "matchDepTypes": ["dependencies", "devDependencies"],
+      "semanticCommitType": "deps",
+      "description": "Flatten dependency updates to the 'deps' conventional-commit type so release-please groups them under a dedicated 'Dependencies' changelog section (major bumps still get the '!' breaking marker)."
+    },
     {
       "matchPackageNames": ["typescript"],
       "allowedVersions": "<7",
